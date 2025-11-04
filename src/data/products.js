@@ -17,36 +17,36 @@
  */
 
 export const CATEGORIES = [
-  { id: "produce", label: "Groente & Fruit", icon: "icons/cat/agf.webp" },
-  { id: "dairy", label: "Zuivel & Eieren", icon: "icons/cat/zuivel.webp" },
-  { id: "bakery", label: "Brood & Ontbijt", icon: "icons/cat/brood.webp" },
+  { id: "produce", label: "Groente & Fruit", icon: "./public/icons/cat/agf.webp" },
+  { id: "dairy", label: "Zuivel & Eieren", icon: "./public/icons/cat/zuivel.webp" },
+  { id: "bakery", label: "Brood & Ontbijt", icon: "./public/icons/cat/brood.webp" },
   {
     id: "meat_fish_veg",
     label: "Vlees, Vis & Vega",
-    icon: "icons/cat/vlees-vis.webp",
+    icon: "./public/icons/cat/vlees-vis.webp",
   },
-  { id: "drinks", label: "Dranken", icon: "icons/cat/dranken.webp" },
-  { id: "alcohol", label: "Alcohol", icon: "icons/cat/alcohol.webp" },
+  { id: "drinks", label: "Dranken", icon: "./public/icons/cat/dranken.webp" },
+  { id: "alcohol", label: "Alcohol", icon: "./public/icons/cat/alcohol.webp" },
   {
     id: "pantry",
     label: "Kruiden & Houdbaar",
-    icon: "icons/cat/kruiden.webp",
+    icon: "./public/icons/cat/kruiden.webp",
   },
-  { id: "frozen", label: "Diepvries", icon: "icons/cat/diepvries.webp" },
+  { id: "frozen", label: "Diepvries", icon: "./public/icons/cat/diepvries.webp" },
   {
     id: "snacks",
     label: "Snacks & Snoep",
-    icon: "icons/cat/snacks-snoep.webp",
+    icon: "./public/icons/cat/snacks-snoep.webp",
   },
-  { id: "baby", label: "Baby & Peuters", icon: "icons/cat/baby.webp" },
-  { id: "pets", label: "Dieren", icon: "icons/cat/huisdieren.webp" },
+  { id: "baby", label: "Baby & Peuters", icon: "./public/icons/cat/baby.webp" },
+  { id: "pets", label: "Dieren", icon: "./public/icons/cat/huisdieren.webp" },
   {
     id: "household",
     label: "Huishoudelijk",
-    icon: "icons/cat/huishoudelijk.webp",
+    icon: "./public/icons/cat/huishoudelijk.webp",
   },
-  { id: "care", label: "Verzorging", icon: "icons/cat/verzorging.webp" },
-  { id: "other", label: "Overig", icon: "icons/cat/overig.webp" },
+  { id: "care", label: "Verzorging", icon: "./public/icons/cat/verzorging.webp" },
+  { id: "other", label: "Overig", icon: "./public/icons/cat/overig.webp" },
 ];
 
 
