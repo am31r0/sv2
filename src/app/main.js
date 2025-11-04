@@ -78,8 +78,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // 4️⃣ Start flow: tutorial → home
   if (shouldShowTutorialOnce()) {
     // Toon tutorial bij eerste gebruik
-    renderTutorialPage(mount);
-    markTutorialShown();
+    /*renderTutorialPage(mount);
+    markTutorialShown();*/
+    router.start();
   } else {
     // Anders direct naar home
     router.start();

@@ -24,23 +24,23 @@ export async function ensureDataLoaded() {
   const [ahRaw, dirkRaw, jumboRaw, aldiRaw, hoogvlietRaw] = await Promise.all([
     loadJSONOncePerDay(
       "ah",
-      "https://am31r0.github.io/supermarkt_scanner/dev/store_database/ah.json"
+      "./dev/store_database/ah.json"
     ),
     loadJSONOncePerDay(
       "dirk",
-      "https://am31r0.github.io/supermarkt_scanner/dev/store_database/dirk.json"
+      "./dev/store_database/dirk.json"
     ),
     loadJSONOncePerDay(
       "jumbo",
-      "https://am31r0.github.io/supermarkt_scanner/dev/store_database/jumbo.json"
+      "./dev/store_database/jumbo.json"
     ),
     loadJSONOncePerDay(
       "aldi",
-      "https://am31r0.github.io/supermarkt_scanner/dev/store_database/aldi.json"
+      "./dev/store_database/aldi.json"
     ),
     loadJSONOncePerDay(
       "hoogvliet",
-      "https://am31r0.github.io/supermarkt_scanner/dev/store_database/hoogvliet.json"
+      "./dev/store_database/hoogvliet.json"
     )
   ]);
 

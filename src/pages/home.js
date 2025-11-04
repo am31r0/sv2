@@ -113,7 +113,7 @@ export async function renderHomePage(mount) {
         try {
           const raw = await loadJSONOncePerDay(
             store,
-            `/dev/store_database/${store}.json`
+            `./dev/store_database/${store}.json`
           );
 
           const arr = Array.isArray(raw) ? raw : raw.data || raw.products || [];

@@ -323,23 +323,23 @@ export async function renderDealsPage(mount) {
   const [ahRaw, dirkRaw, jumboRaw, aldiRaw, hoogvlietRaw] = await Promise.all([
     loadJSONOncePerDay(
       "ah",
-      "https://am31r0.github.io/supermarkt_scanner/dev/store_database/ah.json"
+      "https://./dev/store_database/ah.json"
     ),
     loadJSONOncePerDay(
       "dirk",
-      "https://am31r0.github.io/supermarkt_scanner/dev/store_database/dirk.json"
+      "https://./dev/store_database/dirk.json"
     ),
     loadJSONOncePerDay(
       "jumbo",
-      "https://am31r0.github.io/supermarkt_scanner/dev/store_database/jumbo.json"
+      "https://./dev/store_database/jumbo.json"
     ),
     loadJSONOncePerDay(
       "aldi",
-      "https://am31r0.github.io/supermarkt_scanner/dev/store_database/aldi.json"
+      "https://./dev/store_database/aldi.json"
     ),
     loadJSONOncePerDay(
       "hoogvliet",
-      "https://am31r0.github.io/supermarkt_scanner/dev/store_database/hoogvliet.json"
+      "https://./dev/store_database/hoogvliet.json"
     ),
   ]);
 

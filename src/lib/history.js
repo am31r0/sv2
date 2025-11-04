@@ -153,10 +153,10 @@ export function renderHistoryModal(entry) {
 // -------------------------
 async function refreshItemsWithCurrentPrices(oldItems) {
   const sources = {
-    ah: "https://am31r0.github.io/supermarkt_scanner/dev/store_database/ah.json",
+    ah: "./dev/store_database/ah.json",
     jumbo:
-      "https://am31r0.github.io/supermarkt_scanner/dev/store_database/jumbo.json",
-    dirk: "https://am31r0.github.io/supermarkt_scanner/dev/store_database/dirk.json",
+      "./dev/store_database/jumbo.json",
+    dirk: "./dev/store_database/dirk.json",
   };
 
   // alle data tegelijk fetchen
