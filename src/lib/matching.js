@@ -393,39 +393,52 @@ function pickSmallestAhImage(images) {
   }
   
 
-export function normalizeDirk(p) {
-  const price = p.normalPrice;
-  const promoPrice = p.offerPrice && p.offerPrice > 0 ? p.offerPrice : null;
-  const eff = effectivePrice(price, promoPrice);
+  export function normalizeDirk(p) {
+    const price = toFloatEU(p.normalPrice);
+    const promoPrice = toFloatEU(p.offerPrice);
+    const eff = effectivePrice(
+      price,
+      Number.isFinite(promoPrice) && promoPrice > 0 ? promoPrice : null
+    );
 
-  const unit = "st";
-  const pricePerUnit = eff;
-  const ppuLabel = labelForUnit(unit);
+    // ⬇️ Nieuw: haal maat uit packaging of val terug op titel
+    const unitSize = p.packaging || grabSizeFromText(p.name);
 
-  let image = p.image
-    ? "https://d3r3h30p75xj6a.cloudfront.net/" + p.image
-    : null;
-  if (image && !image.includes("?")) image += "?width=120";
+    // ⬇️ Nieuw: universeel normaliseren naar kg/L/st + PPU
+    const { unit, pricePerUnit, ppuLabel } = parseUnitUniversal({
+      unitSize,
+      unitInfoPrice: null,
+      pricePerUnitString: null,
+      eff, // bereken zelf €/kg | €/L op basis van totale hoeveelheid uit unitSize
+    });
 
-  return {
-    store: "dirk",
-    id: p.productId,
-    name: p.name,
-    brand: p.brand || p.name.split(" ")[0],
-    rawCategory: p.categoryLabel,
-    unifiedCategory: unifyCategory("DIRK", p.categoryLabel, p.name),
-    price,
-    promoPrice,
-    unit,
-    pricePerUnit,
-    ppuLabel,
-    image,
-    labels: normalizeCategoryAndLabels({
-      category: p.categoryLabel,
-      title: p.name,
-    }).labels,
-  };
-}
+    let image = p.image
+      ? "https://d3r3h30p75xj6a.cloudfront.net/" + p.image
+      : null;
+    if (image && !image.includes("?")) image += "?width=120";
+
+    return {
+      store: "dirk",
+      id: p.productId,
+      name: p.name,
+      brand: p.brand || p.name.split(" ")[0],
+      rawCategory: p.categoryLabel,
+      unifiedCategory: unifyCategory("DIRK", p.categoryLabel, p.name),
+      price,
+      promoPrice:
+        Number.isFinite(promoPrice) && promoPrice > 0 ? promoPrice : null,
+      unit: unit || "st",
+      pricePerUnit: Number.isFinite(pricePerUnit) ? pricePerUnit : eff,
+      ppuLabel: ppuLabel || labelForUnit(unit || "st"),
+      image,
+      // Dirk heeft doorgaans geen deep link; laat null of vul in als je later een URL hebt
+      link: p.link || null,
+      labels: normalizeCategoryAndLabels({
+        category: p.categoryLabel,
+        title: p.name,
+      }).labels,
+    };
+  }
 
 export function normalizeAldi(p) {
   const price = p.price;
@@ -460,10 +473,25 @@ export function normalizeHoogvliet(p) {
   const promoPrice = toFloatEU(p.promoPrice || p.discountedPrice || null);
   const eff = effectivePrice(price, promoPrice);
 
-  const unit = p.baseUnit ? normUnitKey(p.baseUnit) : "st";
-  const pricePerUnit = eff;
-  const ppuLabel = labelForUnit(unit);
+  // ⬇️ Nieuw: probeer beschikbare bronnen voor maat/PPU
+  // - p.price_per_unit: soms "x,xx / l" of "x.xx / kg"
+  // - p.unit: kan soms "500 g" of "6 x 33 cl" achtig zijn
+  // - fallback: haal uit de titel
+  const pricePerUnitString =
+    typeof p.price_per_unit === "string" ? p.price_per_unit : null;
+  const unitSize =
+    (typeof p.unit === "string" && p.unit.trim()) ||
+    grabSizeFromText(p.title) ||
+    null;
 
+  const { unit, pricePerUnit, ppuLabel } = parseUnitUniversal({
+    unitSize,
+    unitInfoPrice: null,
+    pricePerUnitString,
+    eff,
+  });
+
+  // promo eind
   let promoEnd = p.promoEnd || null;
   if (!promoEnd && Array.isArray(p.promotions) && p.promotions.length > 0) {
     const promo = p.promotions.find((pr) => pr.validUntil);
@@ -484,9 +512,9 @@ export function normalizeHoogvliet(p) {
     price,
     promoPrice,
     promoEnd,
-    unit,
-    pricePerUnit,
-    ppuLabel,
+    unit: unit || "st",
+    pricePerUnit: Number.isFinite(pricePerUnit) ? pricePerUnit : eff,
+    ppuLabel: ppuLabel || labelForUnit(unit || "st"),
     image: p.image,
     link: p.link,
     labels: normalizeCategoryAndLabels({
@@ -495,6 +523,7 @@ export function normalizeHoogvliet(p) {
     }).labels,
   };
 }
+
 
 /* =======================
    Alles combineren
