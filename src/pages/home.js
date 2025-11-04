@@ -54,7 +54,7 @@ export async function renderHomePage(mount) {
         <button class="home-refresh btn small" style="display:none;">↻ Herlaad</button>
       </div>
       <div class="home-deals-grid"></div>
-      <div class="home-deals-empty" style="display:none;">Geen deals gevonden 😕</div>
+      <div class="home-deals-empty" style="display:none; text-align:center; color:#fff;">Geen deals gevonden 😕</div>
     </section>
 
     <section class="home-wist-je">
