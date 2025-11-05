@@ -1,7 +1,7 @@
 /*AddItem toast popup*/
 .toast-container {
     position: fixed;
-    top: 20px;
+    top: calc(20px + var(--safe-top));
     left: 50%;
     transform: translateX(-50%);
     z-index: 9999;
@@ -12,15 +12,16 @@
 }
 
 .toast {
-    background: #555;
-    color: #fff;
+    background: #002c0c55;
+    backdrop-filter:blur(5px) brightness(0.5);
+    color: #ffffff;
     padding: 10px 16px;
-    border-radius: var(--radius);
+    border-radius: 99px;
     font-size: 0.8rem;
     opacity: 0;
     transform: translateY(20px);
     transition: opacity 0.3s, transform 0.3s;
-    box-shadow: 0 0 10px #00000066;
+    box-shadow: 0 0 10px #00000045;
     width:max-content;
     max-width:min(95vw,460px);
     word-wrap: break-word;

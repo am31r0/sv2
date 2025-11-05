@@ -17,17 +17,7 @@ function loadList() {
 function saveList(items) {
   localStorage.setItem(LS_KEY, JSON.stringify(items));
 }
-//fake skeleton
-export function renderHomeSkeleton(mount) {
-  mount.innerHTML = `
-    <div class="page page-skeleton">
-      <div class="skeleton-header shimmer page-header"></div>
-      <div class="skeleton-card shimmer"></div>
-      <div class="skeleton-card shimmer"></div>
-      <div class="skeleton-card shimmer"></div>
-    </div>
-  `;
-}
+
 
 
 /* ---------------- Renderer ---------------- */
@@ -36,7 +26,7 @@ export async function renderHomePage(mount) {
 
   mount.innerHTML = `
     <div class="home-header page-header header-logo">
-    <img class="logo" src="./public/icons/schappie-logo.webp">
+    <img class="logo" src="./icons/schappie-logo.webp">
       <!--<h3 style="font-size:0.6rem;">Beta 0.4.251016.1 (hotfix)</h3>-->
     </div>
 
@@ -103,7 +93,7 @@ export async function renderHomePage(mount) {
   const MAX_RETRIES = 40; // 40 * 0.5s = 20 seconden max
 
   async function loadDeals() {
-    grid.innerHTML = `<p style="opacity:0.6;text-align:center;">Laden...</p>`;
+    grid.innerHTML = `<p style="opacity:0.6;text-align:center;width:min(500px,100vw)">Laden...</p>`;
     emptyState.style.display = "none";
 
     const stores = ["ah", "jumbo", "dirk"];
@@ -231,7 +221,7 @@ export async function renderHomePage(mount) {
         list.push(item);
         saveList(list);
         document.dispatchEvent(new Event("list:changed"));
-        showToast("✅ Toegevoegd aan Mijn Lijst");
+        showToast("Toegevoegd aan Mijn Lijst");
       });
     });
   }

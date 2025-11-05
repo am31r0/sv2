@@ -68,10 +68,7 @@
     border-radius: 6px;
 }
 
-.deal-card .add-btn {
-    justify-self: flex-end;
-    font-size: 0.6rem;
-}
+
 
 .store-header {
     max-width: 95%;
@@ -327,3 +324,24 @@
     width: 100%;
     font-size: 0.8rem;
 }
+
+.search-results-deals .deal-card .info-btn {
+    position: absolute;
+    border: none;
+    overflow: visible;
+}
+
+.search-results-deals .deal-card .info-btn svg {
+    position: absolute;
+    left: 0px;
+    top: 1.6rem;
+    fill: #2db389;
+    width: 1.2rem;
+    height: 1.2rem;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    overflow: visible;}

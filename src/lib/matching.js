@@ -636,8 +636,8 @@ const SEMANTIC_BLOCKLIST = {
   thee: ["theemok", "theepot", "theedoek"],
   wijn: ["wijnrek", "wijnkoeler", "wijnflesopener"],
   bier: ["bierglas", "bieropener", "bierkrat"],
-  cola: ["chocola"],
-  banaan: ["bananenboom", "bananenchips"],
+  cola: ["chocola", "dulcolax", "peijnenburg", "sinas" ,"orange", "lemon", "mango", "tea", "rucola", "citrus", "breaker"],
+  banaan: ["bananenboom", "bananenchips", "baby", "kids", "junior"],
 };
 
 function semanticFilter(query, product) {
@@ -882,15 +882,14 @@ function defaultSort(a, b) {
      products,
      query = "",
      chosenCategory = null,
-     sortBy = "score" // "score" | "ppu" | "price" | "alpha" | "promo"
+     sortBy = "score"
    ) {
      if (!Array.isArray(products)) return [];
-
      const qRaw = String(query || "");
      const q = normalizeQuery(qRaw);
-     if (q.length < 2) return [];
+     if (q.length < 2) return []; // require at least 2 characters
 
-     // ✅ Veilig ophalen van actieve winkels
+     // Determine active stores (to filter out disabled ones)
      const storeData = getEnabledStores();
      let enabledStores = [];
      if (Array.isArray(storeData)) {
@@ -901,44 +900,90 @@ function defaultSort(a, b) {
          .map((s) => s.toLowerCase());
      }
 
-     const results = [];
+     // Precompute query tokens and their synonyms/variants as groups
+     const tokens = tokenize(q); // e.g. "banaan" -> ["banaan"]
+     const tokenGroups = tokens.map((token) => {
+       let group = [token];
+       if (WORD_VARIANTS[token]) group.push(...WORD_VARIANTS[token]);
+       if (SYNONYMS[token]) group.push(...SYNONYMS[token]);
+       // Trim and deduplicate
+       group = group.map((t) => t.toLowerCase().trim()).filter(Boolean);
+       return Array.from(new Set(group));
+     });
+
      const threshold = adaptiveThreshold(q);
+     const results = [];
 
      for (const p of products) {
        const storeKey = (p.store || "").toLowerCase();
+       if (!enabledStores.includes(storeKey)) continue; // skip disabled stores
+       if (chosenCategory && p.unifiedCategory !== chosenCategory) continue; // filter by category if applied
 
-       // 🚫 skip producten van uitgeschakelde winkels
-       if (!enabledStores.includes(storeKey)) continue;
+       // **Contextual exclusion for fruit queries**:
+       // If the query is a single fruit name and product is in baby category, skip it (unless query explicitly contains 'baby').
+       const isFruitQuery =
+         tokens.length === 1 && FRUIT_KEYWORDS.includes(tokens[0]);
+       if (
+         isFruitQuery &&
+         !q.includes("baby") &&
+         p.unifiedCategory === "baby"
+       ) {
+         continue;
+       }
 
-       // 🚫 optioneel: filter op gekozen categorie
-       if (chosenCategory && p.unifiedCategory !== chosenCategory) continue;
+       // Calculate field-weighted fuzzy match score for each token group (synonym OR-group)
+       let totalScore = 0;
+       for (const group of tokenGroups) {
+         let bestScore = 0;
+         for (const term of group) {
+           const termScore = fieldWeightedScore(term, p);
+           if (termScore > bestScore) {
+             bestScore = termScore;
+           }
+           // If exact substring match found, we can break early for this term (optional optimization)
+           if (bestScore >= 0.999) break;
+         }
+         totalScore += bestScore;
+         // If any group scores 0 (no match at all for one query term), we can break out early as the product won't fully match.
+         if (bestScore === 0) {
+           totalScore = 0;
+           break;
+         }
+       }
+       const avgScore =
+         tokenGroups.length > 0 ? totalScore / tokenGroups.length : 0;
 
-       if (p.promotions && p.prices?.promoPrice && !isPromoActiveNow(p.promotions)) continue;
+       // Apply semantic and contextual adjustments
+       const semanticFactor = semanticFilter(q, p);
+       const contextFactor = contextualRelevanceBoost(q, p);
+       const learnedFactor = learnedBoostFactor(q, p);
+       let score = avgScore * semanticFactor * contextFactor * learnedFactor;
 
-       // 🧠 bereken score
-       let score = multiWordScore(q, p);
-       score *= semanticFilter(q, p);
-       score *= contextualRelevanceBoost(q, p);
-       score *= learnedBoostFactor(q, p);
-
-       // 🔁 fallback: legacy fuzzy-match
-       const legacy = scoreMatch(q, p.name);
-       score = Math.max(score, legacy * 0.9);
-
-       if (score >= threshold) results.push({ ...p, score });
+       if (score >= threshold) {
+         results.push({ ...p, score });
+       }
      }
 
-     // ✅ sortering
-     if (sortBy === "ppu")
-       return results.sort((a, b) => a.pricePerUnit - b.pricePerUnit);
-     if (sortBy === "price") return results.sort((a, b) => a.price - b.price);
-     if (sortBy === "alpha")
-       return results.sort((a, b) => a.name.localeCompare(b.name));
-     if (sortBy === "promo")
-       return results.sort(
-         (a, b) => !!b.promoPrice - !!a.promoPrice || defaultSort(a, b)
+     // Sort results by chosen method
+     if (sortBy === "ppu") {
+       results.sort((a, b) => a.pricePerUnit - b.pricePerUnit);
+     } else if (sortBy === "price") {
+       results.sort((a, b) => a.price - b.price);
+     } else if (sortBy === "alpha") {
+       results.sort((a, b) => a.name.localeCompare(b.name));
+     } else if (sortBy === "promo") {
+       results.sort((a, b) => {
+         // Sort promo items first, then by default score sort
+         if (!!b.promoPrice !== !!a.promoPrice) return b.promoPrice ? 1 : -1;
+         return b.score - a.score || a.name.localeCompare(b.name);
+       });
+     } else {
+       // Default: sort by score (descending), then by name as tie-breaker
+       results.sort(
+         (a, b) => b.score - a.score || a.name.localeCompare(b.name)
        );
-     return results.sort(defaultSort);
+     }
+     return results;
    }
 
 /* =======================

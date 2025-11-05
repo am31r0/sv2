@@ -1,5 +1,6 @@
 // src/pages/deals.js
 import { loadJSONOncePerDay } from "../lib/cache.js";
+
 import { normalizeAll } from "../lib/matching.js";
 import { escHtml, escAttr, formatPrice, uid, showToast } from "../lib/utils.js";
 import {
@@ -8,45 +9,14 @@ import {
   STORE_COLORS,
   STORE_LABEL,
 } from "../lib/constants.js";
+import { addItem } from "../pages/list.js";
+import { showSkeletonOverlay, hideSkeletonOverlay } from "../lib/skeleton.js";
 
 const LS_KEY = "sms_list";
 
-// -------------------------
-// Storage helpers
-// -------------------------
-function loadList() {
-  try {
-    return JSON.parse(localStorage.getItem(LS_KEY)) ?? [];
-  } catch {
-    return [];
-  }
-}
-function saveList(items) {
-  localStorage.setItem(LS_KEY, JSON.stringify(items));
-}
-
-function addItem(product) {
-  const state = loadList();
-  const item = {
-    id: uid(),
-    name: product.name,
-    cat: product.unifiedCategory || product.cat || "other",
-    pack: product.unit || product.pack || null,
-    qty: 1,
-    done: false,
-    store: product.store,
-    price: product.price || null,
-    promoPrice: product.promoPrice || product.offerPrice || null,
-  };
-  state.push(item);
-  saveList(state);
-  document.dispatchEvent(new Event("list:changed"));
-  showToast(`Toegevoegd aan Mijn Lijst`);
-}
-
-// -------------------------
-// Promo helpers
-// -------------------------
+/* -------------------------
+   Promo helpers
+------------------------- */
 const maandMap = {
   jan: 0,
   februari: 1,
@@ -108,9 +78,9 @@ function isValidPromo(p) {
   return true;
 }
 
-// -------------------------
-// Lijstweergave (hoofdpagina)
-// -------------------------
+/* -------------------------
+   Lijstweergave (hoofdpagina)
+------------------------- */
 function renderProductCardList(p) {
   const promoPrice = p.promoPrice || p.offerPrice || p.discountedPrice || null;
   const endDate = getPromoEnd(p);
@@ -121,9 +91,8 @@ function renderProductCardList(p) {
 
   return `
     <div class="deal-row" data-id="${p.id}" data-store="${p.store}">
-      <img class="deal-thumb" src="${escAttr(p.image || "")}" alt="${escAttr(
-    p.name
-  )}">
+      <img class="deal-thumb" decoding="async" width="72" height="72"
+           src="${escAttr(p.image || "")}" alt="${escAttr(p.name)}">
       <div class="deal-info">
         <div class="deal-name">${escHtml(p.name)}</div>
         <div class="deal-prices">
@@ -132,14 +101,14 @@ function renderProductCardList(p) {
         </div>
         ${promoEndHtml}
       </div>
-      <button class="btn small add-btn">+</button>
+      <button class="btn small add-btn" style="padding:0.3rem 0.55rem;">+</button>
     </div>
   `;
 }
 
-// -------------------------
-// 🔥 Originele modal teruggezet
-// -------------------------
+/* -------------------------
+   🔥 Modal (alle deals)
+------------------------- */
 function renderProductCard(p) {
   const promoPrice = p.promoPrice || p.offerPrice || p.discountedPrice || null;
 
@@ -157,10 +126,18 @@ function renderProductCard(p) {
     }
   }
 
+  const infoBtn = p.link
+    ? `<button class="info-btn" data-link="${p.link}" title="Bekijk productpagina"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle-fill" viewBox="0 0 16 16">
+  <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2"/>
+</svg></button>`
+    : "";
+
   return `
     <div class="deal-card promo" data-id="${p.id}" data-store="${p.store}">
       <div class="meta">
-        <span class="list-store store-${p.store}">${escHtml(p.store)}</span>
+        <span class="list-store store-${p.store}">${escHtml(
+    p.store
+  )}</span> ${infoBtn}
         <div class="price-group">
           <span class="price old">${formatPrice(p.price)}</span>
           <span class="price new">${formatPrice(promoPrice)}</span>
@@ -170,12 +147,15 @@ function renderProductCard(p) {
         </div>
       </div>
       <span class="promo-badge">Aanbieding</span>
-      <img loading="lazy" src="${p.image || ""}" alt="${escAttr(p.name)}"/>
+      <img loading="lazy" decoding="async" width="200" height="200"
+           src="${p.image || ""}" alt="${escAttr(p.name)}"/>
       <div class="info">
         <div class="name">${escHtml(p.name)}</div>
         ${promoEndHtml}
       </div>
-      <button class="btn small add-btn">Toevoegen</button>
+      <div class="actions">
+        <button class="btn small add-btn">Toevoegen</button>
+      </div>
     </div>
   `;
 }
@@ -215,14 +195,14 @@ function showDealsModal(store, products) {
   resultsBox.style.display = "block";
   resultsBox.style.flexWrap = "unset";
 
-  // --- groepeer per categorie ---
+  // Groepeer per categorie
   const grouped = {};
   for (const p of products) {
     const cat = p.unifiedCategory || p.rawCategory || "other";
     (grouped[cat] ||= []).push(p);
   }
 
-  // --- nav knoppen ---
+  // Nav knoppen
   let navHtml = "";
   for (const cat of CATEGORY_ORDER) {
     if (!grouped[cat]) continue;
@@ -231,7 +211,7 @@ function showDealsModal(store, products) {
   }
   navBox.innerHTML = `<div class="cat-nav-inner">${navHtml}</div>`;
 
-  // --- categorieblokken renderen ---
+  // Categorieblokken
   let html = "";
   for (const cat of CATEGORY_ORDER) {
     const list = grouped[cat];
@@ -247,17 +227,17 @@ function showDealsModal(store, products) {
   }
   resultsBox.innerHTML = html;
 
-  // --- smooth scroll ---
+  // Smooth scroll
   navBox.querySelectorAll(".cat-nav-btn").forEach((btn) => {
     btn.addEventListener("click", (e) => {
-      const targetId = e.target.dataset.target;
+      const targetId = e.currentTarget.dataset.target;
       const targetEl = resultsBox.querySelector(`#${targetId}`);
       if (targetEl)
         targetEl.scrollIntoView({ behavior: "auto", block: "start" });
     });
   });
 
-  // --- toevoegen aan lijst binnen modal ---
+  // Add-to-list in modal
   resultsBox.querySelectorAll(".deal-card").forEach((card) => {
     const addBtn = card.querySelector(".add-btn");
     if (addBtn) {
@@ -275,7 +255,7 @@ function showDealsModal(store, products) {
       });
     }
 
-    // Optioneel: klik op heel de kaart ook toevoegen
+    // Hele kaart klikbaar (optioneel)
     card.addEventListener("click", () => {
       const id = card.dataset.id;
       const chosen =
@@ -289,7 +269,7 @@ function showDealsModal(store, products) {
     });
   });
 
-  // --- sluitlogica ---
+  // Sluitlogica
   function closeModal() {
     modal.remove();
     document.removeEventListener("keydown", onKeyDown);
@@ -308,41 +288,149 @@ function showDealsModal(store, products) {
   document.addEventListener("pointerdown", onDocPointerDown, true);
 }
 
-// -------------------------
-// Main render
-// -------------------------
+/* -------------------------
+   Main render
+------------------------- */
 export async function renderDealsPage(mount) {
+
   mount.innerHTML = `
     <section class="deals-page">
       <header class="page-header"><h1>Aanbiedingen</h1></header>
       <div class="deals-container"></div>
     </section>
   `;
+
+  if (!mount) {
+    console.error("[deals] renderDealsPage: mount is null");
+    return;
+  }
+
+  
   const container = mount.querySelector(".deals-container");
+  if (!container) {
+    console.error("[deals] .deals-container not found in mount");
+    return;
+  }
+
+  // 2) Hosts zekerstellen (maak ze aan als ze niet bestaan)
+  let skeletonHost = container.querySelector(".skeleton-host");
+  let storesHost = container.querySelector(".stores-host");
+  if (!skeletonHost) {
+    skeletonHost = document.createElement("div");
+    skeletonHost.className = "skeleton-host";
+    container.appendChild(skeletonHost);
+  }
+  if (!storesHost) {
+    storesHost = document.createElement("div");
+    storesHost.className = "stores-host";
+    container.appendChild(storesHost);
+  }
+
+  // 3) Minimal inline skeleton (zonder externe CSS)
+  function ensureShimmerKF() {
+    if (document.getElementById("skShimmerKF")) return;
+    const style = document.createElement("style");
+    style.id = "skShimmerKF";
+    style.textContent = `
+      @keyframes skShimmer {
+        0% { background-position-x: 200%; }
+        100% { background-position-x: -200%; }
+      }
+      /* fallback voor als .spinner elders niet gestyled is */
+      @keyframes skSpin { 100% { transform: rotate(360deg); } }
+      .sk-fallback-spinner {
+        width: 28px; height: 28px;
+        border: 3px solid #cfcfcf; border-top-color: #7a7a7a;
+        border-radius: 50%;
+        animation: skSpin .8s linear infinite;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function renderInlineSkeleton(target, cards = 3) {
+    if (!target) return;
+    ensureShimmerKF();
+
+    // één skeleton-blok (met spinner erin)
+    const block = (w = "100%", h = 135, mb = 10) => `
+      <div style="
+        position:relative;
+        width:${w}; height:${h}px; margin-bottom:${mb}px; border-radius:12px;
+        background:linear-gradient(90deg,#eee 25%,#f3f3f3 50%,#eee 75%);
+        background-size:200% 100%; animation:skShimmer .9s linear infinite;
+  
+        /* spinner netjes centreren in het blok */
+        display:flex; align-items:center; justify-content:center;
+      ">
+        <!-- Gebruik jouw bestaande .spinner stijl als die er is.
+             Zo niet, tonen we een kleine fallback spinner. -->
+        <div class="spinner"></div>
+        <div class="sk-fallback-spinner" aria-hidden="true"></div>
+      </div>
+    `;
+
+    // één kaart (drie blokken met elk een spinner)
+    const card = () => `
+      <div style="
+        border-radius:20px; background:var(--card-bg,#fff);
+        box-shadow:0 2px 8px rgba(0,0,0,.06);
+        padding:12px; width:min(480px,95vw);
+        overflow:hidden;
+        margin:0 auto 20px auto;
+      ">
+        ${block("100%", 120, 10)}
+        ${block("100%", 120, 6)}
+        ${block("100%", 120, 6)}
+      </div>
+    `;
+
+    // let op: géén extra wrapper erbuiten
+    target.innerHTML = `
+      <div style="display:grid; grid-template-columns:repeat(auto-fill,1fr); gap:12px; padding:8px 0;">
+        ${Array.from({ length: cards }).map(card).join("")}
+      </div>
+    `;
+    target.setAttribute("aria-busy", "true");
+
+    // Als jouw globale .spinner bestaat: verberg de fallback.
+    // (We meten of er CSS op .spinner staat; simpel: als computed width > 0)
+    requestAnimationFrame(() => {
+      const spinners = target.querySelectorAll(".spinner");
+      let hasStyledSpinner = false;
+      spinners.forEach((sp) => {
+        const cs = getComputedStyle(sp);
+        if (parseFloat(cs.width) > 0 || cs.animationName || cs.borderTopColor) {
+          hasStyledSpinner = true;
+        }
+      });
+      if (hasStyledSpinner) {
+        target
+          .querySelectorAll(".sk-fallback-spinner")
+          .forEach((el) => (el.style.display = "none"));
+      }
+    });
+  }
+
+  function clearInlineSkeleton(target) {
+    if (!target) return;
+    target.removeAttribute("aria-busy");
+    target.innerHTML = "";
+  }
+
+  // 4) Wacht 1 paint, dán skeleton tonen (voorkomt router race)
+  await new Promise(requestAnimationFrame);
+  renderInlineSkeleton(skeletonHost, 10);
+
 
   const [ahRaw, dirkRaw, jumboRaw, aldiRaw, hoogvlietRaw] = await Promise.all([
-    loadJSONOncePerDay(
-      "ah",
-      "https://./dev/store_database/ah.json"
-    ),
-    loadJSONOncePerDay(
-      "dirk",
-      "https://./dev/store_database/dirk.json"
-    ),
-    loadJSONOncePerDay(
-      "jumbo",
-      "https://./dev/store_database/jumbo.json"
-    ),
-    loadJSONOncePerDay(
-      "aldi",
-      "https://./dev/store_database/aldi.json"
-    ),
-    loadJSONOncePerDay(
-      "hoogvliet",
-      "https://./dev/store_database/hoogvliet.json"
-    ),
+    loadJSONOncePerDay("ah", "./dev/store_database/ah.json"),
+    loadJSONOncePerDay("dirk", "./dev/store_database/dirk.json"),
+    loadJSONOncePerDay("jumbo", "./dev/store_database/jumbo.json"),
+    loadJSONOncePerDay("aldi", "./dev/store_database/aldi.json"),
+    loadJSONOncePerDay("hoogvliet", "./dev/store_database/hoogvliet.json"),
   ]);
-
+  clearInlineSkeleton(container);
   const all = normalizeAll({
     ah: ahRaw,
     dirk: dirkRaw,
@@ -370,14 +458,14 @@ export async function renderDealsPage(mount) {
 
     const logoSrc =
       store === "ah"
-        ? "./public/icons/ah-logo.webp"
+        ? "./icons/ah-logo.webp"
         : store === "jumbo"
-        ? "./public/icons/jumbo-logo-transparent.webp"
+        ? "./icons/jumbo-logo-transparent.webp"
         : store === "dirk"
-        ? "./public/icons/dirk-logo-square.webp"
+        ? "./icons/dirk-logo-square.webp"
         : store === "aldi"
-        ? "./public/icons/aldi-logo.webp"
-        : "./public/icons/hoogvliet-logo.webp";
+        ? "./icons/aldi-logo.webp"
+        : "./icons/hoogvliet-logo.webp";
 
     const section = document.createElement("section");
     section.className = "store-deals-list";
@@ -395,6 +483,7 @@ export async function renderDealsPage(mount) {
     `;
     container.appendChild(section);
 
+    // Add-to-list op hoofdpagina
     section.querySelectorAll(".deal-row").forEach((row) => {
       row.querySelector(".add-btn").addEventListener("click", (e) => {
         e.stopPropagation();
@@ -403,9 +492,14 @@ export async function renderDealsPage(mount) {
         if (chosen) addItem(chosen);
       });
     });
+    
+    console.log("hide skeleton");
 
+    // Open modal met alle deals per winkel
     section.querySelector(".show-all").addEventListener("click", () => {
       showDealsModal(store, products);
     });
+    
+   
   }
 }

@@ -176,6 +176,7 @@ overflow: visible; }
     flex-shrink: 1;
     word-break: normal;
     justify-content: space-between;
+    align-items: center;
 }
 
 

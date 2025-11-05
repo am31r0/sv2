@@ -5,6 +5,7 @@
 import { escHtml, escAttr, formatPrice } from "./utils.js";
 import { registerClick } from "../lib/adSystem.js";
 import { STORE_LABEL } from "./constants.js";
+import { addItem } from "../pages/list.js";
 
 // ------------------ Basishandlers ------------------
 export function closeAllModals() {
@@ -296,11 +297,9 @@ export function showSearchModal(results, onSelect) {
           }
         }
 
-        // ✅ (i)-knop
+        // (i)-knop (zoals eerder)
         const infoBtn = p.link
-          ? `<button class="info-btn" data-link="${p.link}" title="Bekijk productpagina"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle-fill" viewBox="0 0 16 16">
-          <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2"/>
-        </svg></button>`
+          ? `<button class="info-btn" data-link="${p.link}" title="Bekijk productpagina"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle-fill" viewBox="0 0 16 16"><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2"/></svg></button>`
           : "";
 
         return `
@@ -308,8 +307,9 @@ export function showSearchModal(results, onSelect) {
           p.id
         }" data-store="${p.store}">
             <div class="meta">
-              <span class="list-store store-${p.store}">${escHtml(storeLabel)}
-       </span> ${infoBtn}
+              <span class="list-store store-${p.store}">${escHtml(
+          storeLabel
+        )}</span> ${infoBtn}
               <div class="price-group">
                 ${
                   hasPromo
@@ -334,28 +334,49 @@ export function showSearchModal(results, onSelect) {
                   : ""
               }
               ${promoEndHtml}
-              
+              <div class="actions">
+                <button class="btn small add-btn">Toevoegen</button>
+              </div>
             </div>
           </div>`;
       })
       .join("");
 
-    // ------------------ Event handlers ------------------
-    resultsBox.querySelectorAll(".result-row").forEach((row) => {
-      const id = row.dataset.id;
-      const store = row.dataset.store;
-      const chosen = data.find(
-        (r) => String(r.id) === id && String(r.store) === store
-      );
+    // === Zelfde add-flow als in deals.js ===
+    const resolveChosen = (row) => {
+  const id = row.dataset.id;
+  if (!id) return null;
+  return (
+    data.find(
+      (r) =>
+        String(r.id) === id ||
+        String(r.productId) === id ||
+        String(r.sku) === id
+    ) || null
+  );
+};
 
-      // Selecteer product bij klik op de kaart
-      row.addEventListener("click", (e) => {
-        // Klik op info-knop → open link
+      // Eén listener voor alles binnen resultsBox
+      resultsBox.addEventListener("click", (e) => {
+        const row = e.target.closest(".result-row");
+        if (!row || !resultsBox.contains(row)) return;
+
+        // Info-knop: laat standaard link-gedrag doorgaan
         if (e.target.closest(".info-btn")) return;
-        if (chosen) onSelect(chosen);
-        closeModal();
+
+        const chosen = resolveChosen(row);
+        if (!chosen) return;
+
+        // Add-knop: voorkom bubbelen naar row-click
+        if (e.target.closest(".add-btn")) {
+          e.stopPropagation();
+          addItem(chosen);
+          closeModal();
+          return;
+        }
+
+        // Klik op kaart → selecteren
         registerClick();
-      });
 
       // (i)-knop click
       const infoBtn = row.querySelector(".info-btn");
@@ -364,6 +385,41 @@ export function showSearchModal(results, onSelect) {
           e.stopPropagation();
           window.open(infoBtn.dataset.link, "_blank");
         });
+      });
+
+    // Listeners (zoals in deals.js)
+    resultsBox.querySelectorAll(".result-row").forEach((row) => {
+      const addBtn = row.querySelector(".add-btn");
+      if (addBtn) {
+        addBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const chosen = findChosenByRow(row, data);
+          if (chosen) addItem(chosen);
+          closeModal();// ⬅️ jouw bestaande functie
+        });
+      }
+
+      const favBtn = row.querySelector(".fav-btn");
+      if (favBtn) {
+        favBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const chosen = findChosenByRow(row, data);
+          if (!chosen) return;
+
+          // Gebruik wat jij al hebt: toggleFavorite() of addFavorite()/removeFavorite()
+          if (typeof toggleFavorite === "function") {
+            toggleFavorite(chosen);
+          } else if (typeof addFavorite === "function") {
+            // domme toggle fallback
+            const ok = favBtn.classList.toggle("is-active");
+            if (ok) addFavorite(chosen);
+            else if (typeof removeFavorite === "function")
+              removeFavorite(chosen);
+          }
+
+          favBtn.classList.toggle("is-active");
+        });
+      }
     });
   }
 
@@ -425,4 +481,18 @@ export function showSearchModal(results, onSelect) {
       registerClick();
     })
   );
+
+  function findChosenByRow(row, data) {
+    const id = row.dataset.id;
+    return (
+      data.find(
+        (r) =>
+          String(r.id) === id ||
+          String(r.productId) === id ||
+          String(r.sku) === id
+      ) || null
+    );
+  }
+
+  
 }

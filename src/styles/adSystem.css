@@ -2,7 +2,6 @@
     position: fixed;
     inset: 0;
     top:0;
-    max-width: 500px;
     margin: auto;
     height:100dvh;
     background: rgba(80, 80, 80, 0.3);
@@ -21,7 +20,7 @@
     border-radius: 20px;
     text-align: center;
     position: relative;
-    max-width:90%;
+    max-width:min(480px,95vw);
 }
 
 .ad-close {

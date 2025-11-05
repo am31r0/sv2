@@ -52,17 +52,16 @@ function normalizeEnabledMap(map) {
 /* =======================
    STORAGE
    ======================= */
-function loadList() {
-  try {
-    return JSON.parse(localStorage.getItem(LS_KEY)) ?? [];
-  } catch {
-    return [];
-  }
-}
-
-function saveList(items) {
-  localStorage.setItem(LS_KEY, JSON.stringify(items));
-}
+   export function loadList() {
+     try {
+       return JSON.parse(localStorage.getItem(LS_KEY)) ?? [];
+     } catch {
+       return [];
+     }
+   }
+   export function saveList(items) {
+     localStorage.setItem(LS_KEY, JSON.stringify(items));
+   }
 
 /* =======================
    FAVORIETEN
@@ -118,6 +117,25 @@ function heartSvg(item) {
        </svg>`;
 }
 
+export function addItem(product) {
+  const state = loadList();
+  const item = {
+    id: uid(),
+    name: product.name,
+    cat: product.unifiedCategory || product.cat || "other",
+    pack: product.unit || product.pack || null,
+    qty: 1,
+    done: false,
+    store: product.store,
+    price: product.price || null,
+    promoPrice: product.promoPrice || product.offerPrice || null,
+  };
+  state.push(item);
+  saveList(state);
+  document.dispatchEvent(new Event("list:changed"));
+  showToast(`Toegevoegd aan Mijn Lijst`);
+}
+
 /* =======================
    MAIN PAGE
    ======================= */
@@ -153,24 +171,7 @@ export async function renderListPage(mount) {
   document.addEventListener("stores:changed", rerender);
   window.addEventListener("storage", rerender);
 
-  function addItem(product) {
-    const normStore = normalizeStoreKey(product?.store);
-    const item = {
-      id: uid(),
-      name: product.name,
-      cat: product.cat || NAME_TO_CAT[product.name.toLowerCase()] || "other",
-      qty: 1,
-      done: false,
-      store: normStore,
-      price: product.price || null,
-      promoPrice: product.promoPrice ?? product.offerPrice ?? null,
-      link: product.link || null, // ✅ link toegevoegd voor (i)-knop
-    };
-    state.push(item);
-    saveList(state);
-    renderCommitted();
-    showToast("Toegevoegd aan lijst");
-  }
+
 
   function incItemQtyById(id, delta = 1) {
     const idx = state.findIndex((i) => i.id === id);
@@ -237,9 +238,7 @@ export async function renderListPage(mount) {
         const promoPrice = hasPromo ? Number(item.promoPrice) : null;
 
         // ✅ Toegevoegd: (i)-knop voor originele link
-        const infoBtn = item.link
-          ? `<button class="info-btn" data-link="${item.link}" title="Bekijk productpagina">ℹ️</button>`
-          : "";
+
 
         li.innerHTML = `
           <label class="item-check">
@@ -259,7 +258,6 @@ export async function renderListPage(mount) {
                     ? `<span class="list-price">${formatPrice(item.price)}</span>`
                     : ""
                 }
-                ${infoBtn}
               </span>
             </span>
             <div class="item-actions">

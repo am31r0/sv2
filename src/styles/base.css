@@ -14,6 +14,8 @@
     --font-size-factor:0.9;
     --font-family-accessibility: Inter;
     --danger-btn: linear-gradient(to bottom, red, #b00000) !important;
+    --safe-top: calc(env(safe-area-inset-top) - 10px);
+    --safe-bottom: env(safe-area-inset-bottom);
 }
 
 * {
@@ -38,6 +40,7 @@ body {
     overflow-x:auto;
     overflow-y: auto;
     scroll-behavior: smooth;
+    padding-top: var(--safe-top);
 }
 
 body::-webkit-scrollbar {
@@ -94,6 +97,11 @@ a:hover {
     background: var(--accent);
 }
 
+.add-btn {
+    justify-self: flex-end;
+    font-size: 0.72rem;
+}
+
 .page {
     padding: 0 0% 0 0%;
     max-width: 500px;
@@ -110,7 +118,7 @@ a:hover {
     align-items: center;
     justify-content: center;
     padding: 20px 10px;
-    background: #00000040;
+    background: linear-gradient(to bottom,#00000000 ,#00000040);
     border-radius: 0 0 25% 25%;
     gap: 12px;
     margin-bottom: 1.5rem;

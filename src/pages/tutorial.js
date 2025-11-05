@@ -26,9 +26,9 @@ export function renderTutorialPage(mount) {
             <h2>Zo werkt het</h2>
             <p>
               <br>Selecteer jouw winkels<br>
-              <img src="./public/images/tutorial_storeSelector.webp" class="tutorial-img tutorial-selector">
+              <img src="./images/tutorial_storeSelector.webp" class="tutorial-img tutorial-selector">
               <br>Kies uit de lijst<br>of typ jouw product in de zoekbalk<br>
-              <img src="./public/images/tutorial_zoekbalk.webp" class="tutorial-img tutorial-zoekbalk">
+              <img src="./images/tutorial_zoekbalk.webp" class="tutorial-img tutorial-zoekbalk">
               <br>
             </p>
             <button class="tutorial-next btn small hidden">Volgende →</button>
@@ -38,9 +38,9 @@ export function renderTutorialPage(mount) {
             <h2>Zo werkt het</h2>
             <p>
               Gebruik filters om<br>jouw producten sneller te vinden<br>
-              <img src="./public/images/tutorial_modalfilter.webp" class="tutorial-img tutorial-modalfilter"><br>
+              <img src="./images/tutorial_modalfilter.webp" class="tutorial-img tutorial-modalfilter"><br>
               Klik op een product in<br>jouw lijst
-              om het door te strepen. <br><img src="./public/images/tutorial_doorstrepen.webp" class="tutorial-img tutorial-doorstrepen">
+              om het door te strepen. <br><img src="./images/tutorial_doorstrepen.webp" class="tutorial-img tutorial-doorstrepen">
             </p>
             <button class="tutorial-next btn small hidden">Volgende →</button>
           </div>
